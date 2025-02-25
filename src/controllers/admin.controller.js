@@ -1,5 +1,7 @@
+import DB from "../db.js";
 import Admin from "../models/admin.model.js";
 import User from "../models/user.model.js";
+
 
 export const getAnalyticsDashboard = async (req, res) => {
   try {
@@ -136,11 +138,11 @@ export const deleteUser = async (req, res) => {
 export const promoteUserToAdmin = async (req, res) => {
   try {
     // Check if user is admin
-    // if (req.user.role !== "admin") {
-    //   return res
-    //     .status(403)
-    //     .json({ message: "Access denied: Admin rights required" });
-    // }
+    if (req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ message: "Access denied: Admin rights required" });
+    }
 
     const { userId } = req.params;
 
@@ -162,6 +164,88 @@ export const promoteUserToAdmin = async (req, res) => {
     console.error("Error promoting user to admin:", error);
     res.status(error.message === "User not found" ? 404 : 500).json({
       message: "Error promoting user to admin",
+      error: error.message,
+    });
+  }
+};
+
+export const getAllUsers = async (req, res) => {
+  try {
+    // Verify admin role
+    if (req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ message: "Access denied: Admin rights required" });
+    }
+
+    // Fetch all users with document counts
+    const query = `
+      SELECT u.id, u.username, u.role, u.credits, 
+             COUNT(DISTINCT d.id) as documentCount
+      FROM users u
+      LEFT JOIN documents d ON u.id = d.user_id
+      GROUP BY u.id
+      ORDER BY u.username
+    `;
+
+    const users = await new Promise((resolve, reject) => {
+      DB.all(query, [], (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows);
+      });
+    });
+
+    res.status(200).json({
+      message: "Users retrieved successfully",
+      users: users || [],
+    });
+  } catch (error) {
+    console.error("Error retrieving users:", error);
+    res.status(500).json({
+      message: "Error retrieving users",
+      error: error.message,
+    });
+  }
+};
+
+export const getRequestHistory = async (req, res) => {
+  try {
+    // Check if the user is an admin
+    if (req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ message: "Access denied: Admin rights required" });
+    }
+
+    // Query to fetch request history from the credit_requests table
+    const query = `
+      SELECT 
+        cr.id AS request_id,
+        u.id AS user_id,
+        u.username,
+        cr.amount,
+        cr.status,
+        cr.request_date
+      FROM credit_requests cr
+      JOIN users u ON cr.user_id = u.id
+      ORDER BY cr.request_date DESC
+    `;
+
+    const requestHistory = await new Promise((resolve, reject) => {
+      DB.all(query, [], (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows);
+      });
+    });
+
+    res.status(200).json({
+      message: "Credit request history retrieved successfully",
+      history: requestHistory || [],
+    });
+  } catch (error) {
+    console.error("Error retrieving request history:", error);
+    res.status(500).json({
+      message: "Error retrieving request history",
       error: error.message,
     });
   }

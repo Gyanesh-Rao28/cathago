@@ -5,7 +5,9 @@ import {
   getUserActivity,
   getCreditStats,
   deleteUser,
-  promoteUserToAdmin
+  promoteUserToAdmin,
+  getAllUsers,
+  getRequestHistory
 } from "../controllers/admin.controller.js";
 import {
   exportAnalyticsReport,
@@ -18,6 +20,8 @@ router.get("/analytics", authenticateToken, isAdmin, getAnalyticsDashboard);
 
 // User activity logs
 router.get("/user-activity", authenticateToken, isAdmin, getUserActivity);
+router.get("/users", authenticateToken, isAdmin, getAllUsers);
+router.get("/credit-history", authenticateToken, isAdmin, getRequestHistory);
 
 // Credit usage statistics
 router.get("/credit-stats", authenticateToken, isAdmin, getCreditStats);
