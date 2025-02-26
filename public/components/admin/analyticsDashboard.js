@@ -36,16 +36,10 @@ export class AnalyticsDashboard {
                     </div>
                     
                     <!-- Charts Section -->
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="grid grid-cols-1 lg:grid-cols-1 gap-6 mb-8">
                         <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
                             <h3 class="text-lg font-medium mb-2">Daily Scan Activity</h3>
                             <div id="scanActivityChart" class="h-64 w-full">
-                                <!-- Chart will be rendered here -->
-                            </div>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
-                            <h3 class="text-lg font-medium mb-2">Credit Usage</h3>
-                            <div id="creditUsageChart" class="h-64 w-full">
                                 <!-- Chart will be rendered here -->
                             </div>
                         </div>
@@ -169,7 +163,7 @@ export class AnalyticsDashboard {
 
     // Render charts
     this.renderScanActivityChart();
-    this.renderCreditUsageChart();
+    // this.renderCreditUsageChart();
   }
 
   renderSummaryCards() {
@@ -205,47 +199,55 @@ export class AnalyticsDashboard {
     const topByScans = this.analyticsData.topUsersByScan || [];
     const topByCredits = this.analyticsData.topUsersByCredit || [];
 
+    // Filter out users with zero scans for better display
+    const usersWithScans = topByScans.filter((user) => user.scanCount > 0);
+
     // Render top users by scan count
-    scanContainer.innerHTML = topByScans.length
-      ? topByScans
+    scanContainer.innerHTML = usersWithScans.length
+      ? usersWithScans
           .map(
             (user, index) => `
-            <div class="flex items-center justify-between p-2 ${
-              index % 2 === 0 ? "bg-white" : "bg-gray-100"
-            } rounded">
-                <div class="flex items-center">
-                    <span class="w-6 h-6 flex items-center justify-center bg-indigo-100 text-indigo-800 rounded-full text-xs font-medium mr-2">
-                        ${index + 1}
-                    </span>
-                    <span class="font-medium">${user.username}</span>
-                </div>
-                <span>${user.scanCount} scans</span>
-            </div>
-        `
+          <div class="flex items-center justify-between p-2 ${
+            index % 2 === 0 ? "bg-white" : "bg-gray-100"
+          } rounded">
+              <div class="flex items-center">
+                  <span class="w-6 h-6 flex items-center justify-center bg-indigo-100 text-indigo-800 rounded-full text-xs font-medium mr-2">
+                      ${index + 1}
+                  </span>
+                  <span class="font-medium">${user.username}</span>
+              </div>
+              <span>${user.scanCount} scans</span>
+          </div>
+      `
           )
           .join("")
-      : '<p class="text-gray-500 text-center p-2">No scan data available</p>';
+      : '<p class="text-gray-500 text-center p-2">No users have performed scans yet</p>';
+
+    // Filter out users with zero credit usage for better display
+    const usersWithCreditUsage = topByCredits.filter(
+      (user) => user.creditsUsed > 0
+    );
 
     // Render top users by credit usage
-    creditContainer.innerHTML = topByCredits.length
-      ? topByCredits
+    creditContainer.innerHTML = usersWithCreditUsage.length
+      ? usersWithCreditUsage
           .map(
             (user, index) => `
-            <div class="flex items-center justify-between p-2 ${
-              index % 2 === 0 ? "bg-white" : "bg-gray-100"
-            } rounded">
-                <div class="flex items-center">
-                    <span class="w-6 h-6 flex items-center justify-center bg-indigo-100 text-indigo-800 rounded-full text-xs font-medium mr-2">
-                        ${index + 1}
-                    </span>
-                    <span class="font-medium">${user.username}</span>
-                </div>
-                <span>${user.creditsUsed} credits</span>
-            </div>
-        `
+          <div class="flex items-center justify-between p-2 ${
+            index % 2 === 0 ? "bg-white" : "bg-gray-100"
+          } rounded">
+              <div class="flex items-center">
+                  <span class="w-6 h-6 flex items-center justify-center bg-indigo-100 text-indigo-800 rounded-full text-xs font-medium mr-2">
+                      ${index + 1}
+                  </span>
+                  <span class="font-medium">${user.username}</span>
+              </div>
+              <span>${user.creditsUsed} credits</span>
+          </div>
+      `
           )
           .join("")
-      : '<p class="text-gray-500 text-center p-2">No credit usage data available</p>';
+      : '<p class="text-gray-500 text-center p-2">No users have used credits yet</p>';
   }
 
   renderDocumentTopics() {
@@ -329,25 +331,48 @@ export class AnalyticsDashboard {
 
     console.log("Chart data:", data);
 
+    // If no data, show sample data with a notice
     if (!data.length) {
-      container.innerHTML =
-        '<p class="text-gray-500 text-center h-full flex items-center justify-center">No scan activity data available</p>';
-      return;
+      // Generate sample data for demonstration
+      const today = new Date();
+      const sampleData = [
+        {
+          date: new Date(today.setDate(today.getDate() - 2))
+            .toISOString()
+            .split("T")[0],
+          scanCount: 5,
+        },
+        {
+          date: new Date(today.setDate(today.getDate() + 1))
+            .toISOString()
+            .split("T")[0],
+          scanCount: 8,
+        },
+        {
+          date: new Date(today.setDate(today.getDate() + 1))
+            .toISOString()
+            .split("T")[0],
+          scanCount: 3,
+        },
+      ];
+
+      data = sampleData;
+
+      // Add a notice about sample data
+      const notice = document.createElement("div");
+      notice.className = "text-amber-600 text-xs mb-2 text-center";
+      notice.textContent = "Showing sample data for demonstration";
+      container.parentNode.insertBefore(notice, container);
     }
+
+    // Set a fixed height for the chart
+    const FIXED_CHART_HEIGHT = 200;
+    const minBarHeight = 20;
 
     // Determine the property to use for the count
-    let countProperty = "scanCount";
-    if (data[0].hasOwnProperty("scan_count")) {
-      countProperty = "scan_count";
-    } else if (data[0].hasOwnProperty("scanCount")) {
-      countProperty = "scanCount";
-    } else if (data[0].hasOwnProperty("scan_count")) {
-      countProperty = "scan_count";
-    }
-
-    // Set a minimum height for bars to be visible
-    const minBarHeight = 5;
-    const chartHeight = Math.max(100, container.offsetHeight - 30); // Ensure at least 100px height
+    const countProperty = data[0].hasOwnProperty("scan_count")
+      ? "scan_count"
+      : "scanCount";
 
     // Get max value, or use 1 if all values are 0 to avoid division by zero
     const values = data.map((d) => parseInt(d[countProperty] || 0));
@@ -355,13 +380,10 @@ export class AnalyticsDashboard {
 
     const bars = data
       .map((day) => {
-        // Make sure we have a valid count
         const count = parseInt(day[countProperty] || 0);
-
-        // Calculate bar height, ensuring at least minBarHeight
         const height =
           count > 0
-            ? Math.max(minBarHeight, (count / maxValue) * chartHeight)
+            ? Math.max(minBarHeight, (count / maxValue) * FIXED_CHART_HEIGHT)
             : 0;
 
         // Format date
@@ -379,128 +401,19 @@ export class AnalyticsDashboard {
         }
 
         return `
-      <div class="flex flex-col items-center">
-        <div class="w-10 bg-indigo-500 rounded-t" style="height: ${height}px;"></div>
-        <div class="text-xs text-gray-500 mt-1">${dateStr}</div>
-        <div class="text-xs font-semibold">${count}</div>
-      </div>
-    `;
-      })
-      .join("");
-
-    container.innerHTML = `
-    <div class="h-full flex items-end justify-around pt-4">
-      ${bars}
-    </div>
-  `;
-  }
-
-  renderCreditUsageChart() {
-    const container = this.container.querySelector("#creditUsageChart");
-
-    // Try to find credit data in different possible locations
-    let data = [];
-    if (
-      this.analyticsData.creditStats &&
-      this.analyticsData.creditStats.length > 0
-    ) {
-      data = this.analyticsData.creditStats;
-    } else if (
-      this.analyticsData.creditAnalytics &&
-      this.analyticsData.creditAnalytics.length > 0
-    ) {
-      data = this.analyticsData.creditAnalytics;
-    }
-
-    console.log("Credit data:", data);
-
-    if (!data.length) {
-      container.innerHTML =
-        '<p class="text-gray-500 text-center h-full flex items-center justify-center">No credit usage data available</p>';
-      return;
-    }
-
-    // Set a minimum height for bars to be visible
-    const minBarHeight = 5;
-    const chartHeight = Math.max(100, container.offsetHeight - 30); // Ensure at least 100px height
-
-    // Get max value combining approved + denied credits
-    const maxValue =
-      Math.max(
-        ...data.map((d) => {
-          const approved = parseInt(d.credits_approved || 0);
-          const denied = parseInt(d.credits_denied || 0);
-          return approved + denied;
-        })
-      ) || 1; // Use 1 if all are 0 to avoid division by zero
-
-    const bars = data
-      .map((day) => {
-        const approved = parseInt(day.credits_approved || 0);
-        const denied = parseInt(day.credits_denied || 0);
-
-        const approvedHeight =
-          approved > 0
-            ? Math.max(minBarHeight, (approved / maxValue) * chartHeight)
-            : 0;
-
-        const deniedHeight =
-          denied > 0
-            ? Math.max(minBarHeight, (denied / maxValue) * chartHeight)
-            : 0;
-
-        // Format date
-        let dateStr = "Unknown";
-        try {
-          const dateObj = new Date(day.date);
-          if (!isNaN(dateObj.getTime())) {
-            dateStr = dateObj.toLocaleDateString(undefined, {
-              month: "short",
-              day: "numeric",
-            });
-          }
-        } catch (e) {
-          console.error("Date parsing error:", e);
-        }
-
-        return `
-      <div class="flex flex-col items-center">
-        <div class="w-10 flex flex-col-reverse">
-          ${
-            approvedHeight > 0
-              ? `<div class="bg-green-500 rounded-t" style="height: ${approvedHeight}px;" title="${approved} approved"></div>`
-              : ""
-          }
-          ${
-            deniedHeight > 0
-              ? `<div class="bg-red-500" style="height: ${deniedHeight}px;" title="${denied} denied"></div>`
-              : ""
-          }
+        <div class="flex flex-col items-center">
+          <div class="w-16 bg-indigo-500 rounded-t" style="height: ${height}px;"></div>
+          <div class="text-xs text-gray-500 mt-1">${dateStr}</div>
+          <div class="text-xs font-semibold">${count}</div>
         </div>
-        <div class="text-xs text-gray-500 mt-1">${dateStr}</div>
-        <div class="text-xs font-semibold">${approved + denied}</div>
-      </div>
-    `;
+      `;
       })
       .join("");
 
-    // Add legend
-    const legend = `
-    <div class="flex items-center justify-center space-x-4 mb-2">
-      <div class="flex items-center">
-        <div class="w-3 h-3 bg-green-500 mr-1"></div>
-        <span class="text-xs text-gray-500">Approved</span>
-      </div>
-      <div class="flex items-center">
-        <div class="w-3 h-3 bg-red-500 mr-1"></div>
-        <span class="text-xs text-gray-500">Denied</span>
-      </div>
-    </div>
-  `;
-
     container.innerHTML = `
-    ${legend}
-    <div class="h-[calc(100%-20px)] flex items-end justify-around pt-4">
+    <div class="flex items-end justify-around pt-4" style="min-height: ${
+      FIXED_CHART_HEIGHT + 50
+    }px">
       ${bars}
     </div>
   `;
@@ -514,12 +427,12 @@ export class AnalyticsDashboard {
       exportBtn.innerHTML = '<span class="loading mr-2"></span> Exporting...';
       exportBtn.disabled = true;
 
-      console.log("token",localStorage.getItem("token"));
-
-      // Fetch the analytics data with credentials
+      // Fetch the analytics data with proper authorization header
       fetch(`/api/admin/export/analytics?format=json&t=${Date.now()}`, {
         method: "GET",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
         credentials: "include", // Ensures cookies are sent with the request
       })
         .then((response) => {
@@ -581,5 +494,5 @@ export class AnalyticsDashboard {
 
   refresh() {
     this.loadAnalytics();
-  }   
+  }
 }

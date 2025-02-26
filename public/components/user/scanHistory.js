@@ -77,8 +77,6 @@ export class ScanHistory {
     try {
       const result = await api.getScanHistory();
 
-      console.log(result);
-
       if (result.error) {
         throw new Error(result.message);
       }
@@ -100,49 +98,59 @@ export class ScanHistory {
         .classList.remove("hidden");
 
       const tbody = this.container.querySelector("#scanHistoryBody");
-      tbody.innerHTML = data.scans
-        .map((scan) => {
-          // Properly format the date by replacing the space with 'T'
-          const scanDateStr = scan.scan_date
-            ? scan.scan_date.replace(" ", "T")
-            : null;
-          const scanDate = scanDateStr
-            ? new Date(scanDateStr).toLocaleDateString()
-            : "Unknown date";
-          const filename = scan.filename || "Unnamed document";
 
-          // Check for matches property - if not available, show "No data"
-          let matchDisplay;
-          if (scan.matches) {
-            const matchCount = Array.isArray(scan.matches)
-              ? scan.matches.length
-              : scan.matches;
-            matchDisplay =
-              matchCount > 0
-                ? `<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">${matchCount} matches</span>`
-                : '<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">No matches</span>';
-          } else {
-            matchDisplay =
-              '<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">No matches</span>';
-          }
+      // Group scans by scan_id
+      const scanGroups = data.scans.reduce((acc, scan) => {
+        if (!acc[scan.scan_id]) {
+          acc[scan.scan_id] = {
+            scan_date: scan.scan_date.replace(" ", "T"),
+            filename: scan.filename || "Unnamed document",
+            matches: [],
+          };
+        }
+        // If there's a match, add it
+        if (scan.matched_doc_id) {
+          acc[scan.scan_id].matches.push({
+            matched_filename: scan.matched_filename,
+            similarity_score: scan.similarity_score,
+          });
+        }
+        return acc;
+      }, {});
+
+      // Render the table
+      tbody.innerHTML = Object.entries(scanGroups)
+        .map(([scanId, scan]) => {
+          const scanDate = new Date(scan.scan_date).toLocaleDateString();
+
+          // Sort matches by similarity_score in descending order and take top 3
+          const topMatches = scan.matches
+            .sort((a, b) => b.similarity_score - a.similarity_score)
+            .slice(0, 1)
+            .map(
+              (match) =>
+                `<div>${
+                  match.matched_filename
+                } - <span class="text-green-600">${match.similarity_score.toFixed(
+                  2
+                )}%</span></div>`
+            )
+            .join("");
+
+          const matchDisplay =
+            topMatches || '<span class="text-gray-500">No Matches</span>';
 
           return `
-        <tr>
-            <td class="px-6 py-4 whitespace-nowrap">
-                ${scanDate}
-            </td>
-            <td class="px-6 py-4">
-                ${filename}
-            </td>
-            <td class="px-6 py-4">
-                ${matchDisplay}
-            </td>
-            <td class="px-6 py-4">
-                <button data-scan-id="${scan.id}" class="text-blue-500 hover:text-blue-700 view-matches">
-                    View Matches
-                </button>
-            </td>
-        </tr>
+      <tr>
+        <td class="px-6 py-4 whitespace-nowrap">${scanDate}</td>
+        <td class="px-6 py-4">${scan.filename}</td>
+        <td class="px-6 py-4">${matchDisplay}</td>
+        <td class="px-6 py-4">
+          <button data-scan-id="${scanId}" class="text-blue-500 hover:text-blue-700 view-matches">
+            View Matches
+          </button>
+        </td>
+      </tr>
     `;
         })
         .join("");
@@ -180,8 +188,12 @@ export class ScanHistory {
       const button = this.container.querySelector(
         `button[data-scan-id="${scanId}"]`
       );
+
+      // Store the original text outside the if block so it's available in the setTimeout
+      let originalText = "View Matches"; // Default text
+
       if (button) {
-        const originalText = button.textContent;
+        originalText = button.textContent.trim(); // Save original text
         button.innerHTML = '<span class="loading mr-1"></span> Loading...';
         button.disabled = true;
       }
@@ -193,7 +205,7 @@ export class ScanHistory {
       // Reset button after a short delay
       setTimeout(() => {
         if (button) {
-          button.textContent = originalText;
+          button.textContent = originalText; // Now originalText is in scope
           button.disabled = false;
         }
       }, 1000);
@@ -202,7 +214,6 @@ export class ScanHistory {
       alert("Failed to load matches. Please try again.");
     }
   }
-
   async exportScanHistory() {
     try {
       // Show loading state on export button
@@ -211,14 +222,35 @@ export class ScanHistory {
       exportBtn.innerHTML = '<span class="loading mr-2"></span> Exporting...';
       exportBtn.disabled = true;
 
-      // Create a download link and trigger it
+      // Fetch the export with Authorization header
+      const response = await fetch(
+        `/api/auth/export/scan-history?format=csv&t=${Date.now()}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Export failed: ${response.statusText}`);
+      }
+
+      // Get the blob from the response
+      const blob = await response.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+
+      // Create download link and trigger it
       const downloadLink = document.createElement("a");
-      downloadLink.href = `/api/auth/export/scan-history?format=csv&t=${Date.now()}`;
-      downloadLink.target = "_blank";
+      downloadLink.href = downloadUrl;
       downloadLink.download = "scan_history.csv";
       document.body.appendChild(downloadLink);
       downloadLink.click();
       document.body.removeChild(downloadLink);
+
+      // Revoke the URL to free memory
+      URL.revokeObjectURL(downloadUrl);
 
       // Reset button after a delay
       setTimeout(() => {
@@ -227,7 +259,14 @@ export class ScanHistory {
       }, 2000);
     } catch (error) {
       console.error("Error exporting scan history:", error);
-      alert("Failed to export scan history. Please try again.");
+      alert("Failed to export scan history: " + error.message);
+
+      // Reset button if there's an error
+      const exportBtn = this.container.querySelector("#exportHistory");
+      if (exportBtn) {
+        exportBtn.textContent = originalText || "Export History";
+        exportBtn.disabled = false;
+      }
     }
   }
 }

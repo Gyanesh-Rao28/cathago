@@ -66,9 +66,18 @@ class Scan {
   static async getUserScans(userId) {
     return new Promise((resolve, reject) => {
       DB.all(
-        `SELECT sh.id, sh.scan_date, d.id as document_id, d.filename 
+        `SELECT 
+           sh.id AS scan_id, 
+           sh.scan_date, 
+           d.id AS document_id, 
+           d.filename, 
+           mr.matched_doc_id, 
+           d2.filename AS matched_filename, 
+           mr.similarity_score
          FROM scan_history sh
          JOIN documents d ON sh.document_id = d.id
+         LEFT JOIN match_results mr ON sh.id = mr.scan_id
+         LEFT JOIN documents d2 ON mr.matched_doc_id = d2.id
          WHERE sh.user_id = ?
          ORDER BY sh.scan_date DESC`,
         [userId],

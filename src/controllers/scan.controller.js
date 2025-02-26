@@ -185,5 +185,5 @@ export const getUserScans = async (req, res) => {
       message: "Error retrieving user scans",
       error: error.message,
     });
-  }
+  }       
 };
