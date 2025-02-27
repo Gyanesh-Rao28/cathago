@@ -30,8 +30,8 @@ A comprehensive document scanning and matching system with an integrated credit 
 
 1. Clone the repository
    ```bash
-   git clone https://github.com/your-username/document-scanning-system.git
-   cd document-scanning-system
+   git clone https://github.com/Gyanesh-Rao28/cathago-backend.git
+   cd cathago-backend
    ```
 
 2. Install dependencies
