@@ -30,8 +30,8 @@ A comprehensive document scanning and matching system with an integrated credit 
 
 1. Clone the repository
    ```bash
-   git clone https://github.com/your-username/document-scanning-system.git
-   cd document-scanning-system
+   git clone https://github.com/Gyanesh-Rao28/cathago-backend.git
+   cd cathago-backend
    ```
 
 2. Install dependencies
@@ -425,6 +425,23 @@ The application is organized into the following main components:
 }
 ```
 
+### Development Endpoints [For Development Purposes]
+
+#### 1. Admin Access in Development  
+- **URL**: `/dev/make-admin/:username`  
+- **Method**: `POST`  
+
+**Success Response**  
+- **Code**: 200 OK  
+- **Content**:  
+```json
+{
+    "message": "User \"USER\" has been granted admin access",
+    "changes": 1
+}
+```
+
+
 ## Usage Examples
 
 ### Regular User Workflow
@@ -473,19 +490,3 @@ The system uses SQLite with the following tables:
 - `credit_requests`: User requests for additional credits
 - `activity_logs`: System activity logging
 
-## Troubleshooting
-
-### Common Issues
-
-1. **JWT token expired or invalid**
-   - Solution: Re-login to get a new token
-
-2. **Insufficient credits for scanning**
-   - Solution: Request additional credits or wait for daily reset
-
-3. **Database errors**
-   - Solution: Check database integrity or reset the database file
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
