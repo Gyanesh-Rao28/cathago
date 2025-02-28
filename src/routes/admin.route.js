@@ -7,8 +7,10 @@ import {
   deleteUser,
   promoteUserToAdmin,
   getAllUsers,
-  getRequestHistory
+  getRequestHistory,
+  resetUserCredits,
 } from "../controllers/admin.controller.js";
+
 import {
   exportAnalyticsReport,
 } from "../controllers/export.controller.js";
@@ -25,6 +27,7 @@ router.get("/credit-history", authenticateToken, isAdmin, getRequestHistory);
 
 // Credit usage statistics
 router.get("/credit-stats", authenticateToken, isAdmin, getCreditStats);
+router.post("/users/:userId/reset-credits", authenticateToken, isAdmin, resetUserCredits);
 
 // user control
 router.delete('/users/:userId', authenticateToken, isAdmin, deleteUser);

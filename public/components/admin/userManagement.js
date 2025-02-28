@@ -418,6 +418,7 @@ export class UserManagement {
   }
 
   async resetUserCredits(userId) {
+    console.log(userId)
     try {
       const response = await fetch(`/api/admin/users/${userId}/reset-credits`, {
         method: "POST",

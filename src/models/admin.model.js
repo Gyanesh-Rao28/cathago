@@ -283,6 +283,22 @@ class Admin {
       );
     });
   }
+
+  static async resetUserCredit(userId) {
+    return new Promise((resolve, reject) => {
+      DB.run(
+        `UPDATE users SET credits = 20, last_reset = CURRENT_TIMESTAMP WHERE id = ?`,
+        [userId],
+        function (err) {
+          if (err) {
+            console.error("Database error:", err);
+            return reject(new Error("Failed to reset credits"));
+          }
+          resolve({ changes: this.changes || 0 });
+        }
+      );
+    });
+  }
 }
 
 export default Admin;
