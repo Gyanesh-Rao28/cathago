@@ -490,19 +490,3 @@ The system uses SQLite with the following tables:
 - `credit_requests`: User requests for additional credits
 - `activity_logs`: System activity logging
 
-## Troubleshooting
-
-### Common Issues
-
-1. **JWT token expired or invalid**
-   - Solution: Re-login to get a new token
-
-2. **Insufficient credits for scanning**
-   - Solution: Request additional credits or wait for daily reset
-
-3. **Database errors**
-   - Solution: Check database integrity or reset the database file
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
